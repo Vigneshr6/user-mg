@@ -7,7 +7,8 @@ import {
   Button,
 } from "@material-ui/core";
 import { LockOutlined } from "@material-ui/icons";
-import { Form, Formik } from "formik";
+import { Formik } from "formik";
+import * as yup from "yup";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -19,6 +20,7 @@ const useStyles = makeStyles((theme) => ({
   form: {
     width: "100%", // Fix IE 11 issue.
     marginTop: theme.spacing(2),
+    padding: theme.spacing(3,1),
   },
   avatar: {
     margin: theme.spacing(1),
@@ -29,21 +31,19 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const validateRequired = (value, field, errors) => {
-  if (!value) {
-    errors[field] = "Required";
-  }
-};
-
-const validate = (value, field, errors, ...validators) => {
-  for (let i = 0; i < validators.length; i++) {
-    let v = validators[i];
-    v(value, field, errors);
-    if (errors[field]) {
-      break;
-    }
-  }
-};
+const validate = yup.object({
+  firstName: yup.string().required("Required"),
+  lastName: yup.string().required("Required"),
+  email: yup.string().required("Required").email(),
+  password: yup
+    .string()
+    .required("Required")
+    .matches(
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
+      "Must Contain 8 Characters, One Uppercase, One Lowercase, One Number and one special case Character"
+    ),
+  userName: yup.string().required().min(8, "Must be atleast 8 characters"),
+});
 
 export default function SignUp() {
   const classes = useStyles();
@@ -56,6 +56,7 @@ export default function SignUp() {
         Sign up
       </Typography>
       <Formik
+        validateOnChange={false}
         initialValues={{
           firstName: "",
           lastName: "",
@@ -64,22 +65,7 @@ export default function SignUp() {
           dob: new Date().toISOString().replace(/T.+/g, ""),
           userName: "",
         }}
-        validate={(values) => {
-          console.log("validate");
-          const errors = {};
-          validate(
-            values.email,
-            "email",
-            errors,
-            validateRequired,
-            (value, field, errors) => {
-              if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)) {
-                errors[field] = "Invalid email address";
-              }
-            }
-          );
-          return errors;
-        }}
+        validationSchema={validate}
         onSubmit={(values, { setSubmitting }) => {
           setTimeout(() => {
             alert(JSON.stringify(values, null, 2));
@@ -87,8 +73,15 @@ export default function SignUp() {
           }, 400);
         }}
       >
-        {({ values, touched ,errors, handleChange, handleSubmit, handleBlur }) => (
-          <Form className={classes.form} onSubmit={handleSubmit}>
+        {({
+          values,
+          touched,
+          errors,
+          handleChange,
+          handleSubmit,
+          handleBlur,
+        }) => (
+          <form className={classes.form} onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid item>
                 <TextField
@@ -98,6 +91,9 @@ export default function SignUp() {
                   label="First Name"
                   value={values.firstName}
                   onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.firstName && Boolean(errors.firstName)}
+                  helperText={touched.firstName && errors.firstName}
                   required
                   autoFocus
                 />
@@ -110,6 +106,9 @@ export default function SignUp() {
                   label="Last Name"
                   value={values.lastName}
                   onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.lastName && Boolean(errors.lastName)}
+                  helperText={touched.lastName && errors.lastName}
                   required
                 />
               </Grid>
@@ -124,8 +123,8 @@ export default function SignUp() {
               value={values.email}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={touched.email && errors.email !== ""}
-              helperText={touched.email ? errors.email: ""}
+              error={touched.email && Boolean(errors.email)}
+              helperText={touched.email && errors.email}
               fullWidth
               required
             />
@@ -136,6 +135,9 @@ export default function SignUp() {
               label="User Name"
               value={values.userName}
               onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.userName && Boolean(errors.userName)}
+              helperText={touched.userName && errors.userName}
               fullWidth
               required
             />
@@ -149,6 +151,9 @@ export default function SignUp() {
               margin="normal"
               value={values.password}
               onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.password && Boolean(errors.password)}
+              helperText={touched.password && errors.password}
               fullWidth
               required
             />
@@ -167,7 +172,7 @@ export default function SignUp() {
             <Button type="submit" variant="contained" fullWidth color="primary">
               Sign Up
             </Button>
-          </Form>
+          </form>
         )}
       </Formik>
     </div>
