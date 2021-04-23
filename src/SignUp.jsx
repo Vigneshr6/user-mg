@@ -7,7 +7,7 @@ import {
   Button,
 } from "@material-ui/core";
 import { LockOutlined } from "@material-ui/icons";
-import { Formik } from "formik";
+import { Form, Formik } from "formik";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -29,12 +29,20 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const validateRequired = (form, fields, errors) => {
-  fields.foreach((field) => {
-    if (!form[field]) {
-      errors[field] = "Required";
+const validateRequired = (value, field, errors) => {
+  if (!value) {
+    errors[field] = "Required";
+  }
+};
+
+const validate = (value, field, errors, ...validators) => {
+  for (let i = 0; i < validators.length; i++) {
+    let v = validators[i];
+    v(value, field, errors);
+    if (errors[field]) {
+      break;
     }
-  });
+  }
 };
 
 export default function SignUp() {
@@ -57,14 +65,19 @@ export default function SignUp() {
           userName: "",
         }}
         validate={(values) => {
+          console.log("validate");
           const errors = {};
-          if (!values.email) {
-            errors.email = "Required";
-          } else if (
-            !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
-          ) {
-            errors.email = "Invalid email address";
-          }
+          validate(
+            values.email,
+            "email",
+            errors,
+            validateRequired,
+            (value, field, errors) => {
+              if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)) {
+                errors[field] = "Invalid email address";
+              }
+            }
+          );
           return errors;
         }}
         onSubmit={(values, { setSubmitting }) => {
@@ -74,8 +87,8 @@ export default function SignUp() {
           }, 400);
         }}
       >
-        {({ values, errors, handleChange, handleSubmit, handleBlur }) => (
-          <form className={classes.form} onSubmit={handleSubmit}>
+        {({ values, touched ,errors, handleChange, handleSubmit, handleBlur }) => (
+          <Form className={classes.form} onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid item>
                 <TextField
@@ -111,8 +124,8 @@ export default function SignUp() {
               value={values.email}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={errors.email}
-              helperText={errors.email}
+              error={touched.email && errors.email !== ""}
+              helperText={touched.email ? errors.email: ""}
               fullWidth
               required
             />
@@ -154,7 +167,7 @@ export default function SignUp() {
             <Button type="submit" variant="contained" fullWidth color="primary">
               Sign Up
             </Button>
-          </form>
+          </Form>
         )}
       </Formik>
     </div>
