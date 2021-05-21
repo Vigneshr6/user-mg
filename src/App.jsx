@@ -1,5 +1,7 @@
 import { Container } from "@material-ui/core";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
+import Home from "./Home";
+import { Protect } from "./Protect";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 
@@ -11,8 +13,13 @@ function App() {
           <Route path="/signup">
             <SignUp />
           </Route>
-          <Route path="/">
+          <Route path="/signin">
             <SignIn />
+          </Route>
+          <Route path="/">
+            <Protect>
+              <Home />
+            </Protect>
           </Route>
         </Switch>
       </Container>

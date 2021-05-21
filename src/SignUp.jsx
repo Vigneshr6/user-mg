@@ -5,10 +5,18 @@ import {
   Grid,
   TextField,
   Button,
+  CircularProgress,
+  Modal,
+  Dialog,
 } from "@material-ui/core";
 import { LockOutlined } from "@material-ui/icons";
+import { Alert, AlertTitle } from "@material-ui/lab";
 import { Formik } from "formik";
+import { useState } from "react";
+import { useHistory } from "react-router";
 import * as yup from "yup";
+import AuthManager from "./services/auth";
+import httpClient from "./services/http";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -29,6 +37,13 @@ const useStyles = makeStyles((theme) => ({
   date: {
     margin: theme.spacing(3, 0),
   },
+  loader: {
+    color: "white",
+    marginRight: "20px",
+  },
+  formTitle: {
+    marginBottom: theme.spacing(3),
+  },
 }));
 
 const validate = yup.object({
@@ -42,19 +57,76 @@ const validate = yup.object({
       /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
       "Must Contain 8 Characters, One Uppercase, One Lowercase, One Number and one special case Character"
     ),
-  userName: yup.string().required().min(8, "Must be atleast 8 characters"),
+  username: yup
+    .string()
+    .required("Required")
+    .min(8, "Must be atleast 8 characters")
+    .test("checkUsername", "Username already exists", async (value) => {
+      if (!value) {
+        return false;
+      }
+      let res = await httpClient.get("/api/auth/isexists", {
+        params: {
+          username: value,
+        },
+      });
+      if (res.data) {
+        return false;
+      }
+      return true;
+    }),
 });
 
 export default function SignUp() {
   const classes = useStyles();
+  const history = useHistory();
+  const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+
+  const createUser = (form) => {
+    console.log("form : " + JSON.stringify(form));
+    httpClient
+      .post("/api/auth/signup", form, {
+        headers: {
+          // "Content-Type": "application/json;charset=UTF-8",
+          "Access-Control-Allow-Origin": "*",
+        },
+      })
+      .then((res) => {
+        console.log("success : " + res.status);
+        let token = res.headers.authorization;
+        // console.log("token got : " + token);
+        AuthManager.setToken(token);
+        setShowSuccess(true);
+      })
+      .catch((error) => {
+        console.log("error while creating user: " + error);
+        setShowError(true);
+      });
+    setLoading(false);
+  };
+
+  const gotoNext = () => {
+    setShowSuccess(false);
+    history.push("/");
+  };
+
   return (
     <div className={classes.paper}>
       <Avatar className={classes.avatar}>
         <LockOutlined />
       </Avatar>
-      <Typography component="h1" variant="h5">
+      <Typography component="h1" variant="h5" className={classes.formTitle}>
         Sign up
       </Typography>
+      {showError ? (
+        <Alert severity="error">
+          Something went wrong. please try after sometime.
+        </Alert>
+      ) : (
+        ""
+      )}
       <Formik
         validateOnChange={false}
         initialValues={{
@@ -63,14 +135,13 @@ export default function SignUp() {
           email: "",
           password: "",
           dob: new Date().toISOString().replace(/T.+/g, ""),
-          userName: "",
+          username: "",
         }}
         validationSchema={validate}
         onSubmit={(values, { setSubmitting }) => {
-          setTimeout(() => {
-            alert(JSON.stringify(values, null, 2));
-            setSubmitting(false);
-          }, 400);
+          setSubmitting(false);
+          setLoading(true);
+          createUser(values);
         }}
       >
         {({
@@ -130,14 +201,14 @@ export default function SignUp() {
             />
             <TextField
               variant="standard"
-              name="userName"
-              id="userName"
+              name="username"
+              id="username"
               label="User Name"
-              value={values.userName}
+              value={values.username}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={touched.userName && Boolean(errors.userName)}
-              helperText={touched.userName && errors.userName}
+              error={touched.username && Boolean(errors.username)}
+              helperText={touched.username && errors.username}
               fullWidth
               required
             />
@@ -170,11 +241,28 @@ export default function SignUp() {
               fullWidth
             />
             <Button type="submit" variant="contained" fullWidth color="primary">
+              {loading ? (
+                <CircularProgress size={20} className={classes.loader} />
+              ) : (
+                ""
+              )}
               Sign Up
             </Button>
           </form>
         )}
       </Formik>
+      <Modal
+        BackdropProps={{ style: { backgroundColor: "transparent" } }}
+        open={loading}
+      >
+        <div></div>
+      </Modal>
+      <Dialog open={showSuccess} onClose={gotoNext}>
+        <Alert severity="success">
+          <AlertTitle>Success</AlertTitle>
+          Registered — <strong>successfully!</strong>
+        </Alert>
+      </Dialog>
     </div>
   );
 }
