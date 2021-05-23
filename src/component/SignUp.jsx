@@ -12,11 +12,11 @@ import {
 import { LockOutlined } from "@material-ui/icons";
 import { Alert, AlertTitle } from "@material-ui/lab";
 import { Formik } from "formik";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useHistory } from "react-router";
 import * as yup from "yup";
-import AuthManager from "./services/auth";
-import httpClient from "./services/http";
+import { AuthenticationContext, setToken } from "../service/auth";
+import { httpClient } from "../service/http";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -83,6 +83,7 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
+  const { setIsLoggedIn } = useContext(AuthenticationContext);
 
   const createUser = (form) => {
     console.log("form : " + JSON.stringify(form));
@@ -97,7 +98,8 @@ export default function SignUp() {
         console.log("success : " + res.status);
         let token = res.headers.authorization;
         // console.log("token got : " + token);
-        AuthManager.setToken(token);
+        setToken(token);
+        setIsLoggedIn(true);
         setShowSuccess(true);
       })
       .catch((error) => {

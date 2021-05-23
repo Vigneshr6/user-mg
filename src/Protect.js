@@ -1,11 +1,10 @@
 import {
     Redirect
 } from "react-router";
-
-import AuthManager from './services/auth';
+import { isAuthenticated } from "./service/auth";
 
 export function Protect(props) {
-    if (AuthManager.isAuthenticated()) {
+    if (isAuthenticated()) {
         console.log("authenticated");
         return props.children;
     } else {

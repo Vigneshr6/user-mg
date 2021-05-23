@@ -14,11 +14,11 @@ import {
 import { LockOutlined } from "@material-ui/icons";
 import { Alert } from "@material-ui/lab";
 import { Formik } from "formik";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Link as RouterLink, useHistory } from "react-router-dom";
 import * as yup from "yup";
-import authManger from "./services/auth";
-import httpClient from "./services/http";
+import { AuthenticationContext, setToken } from "../service/auth";
+import { httpClient } from "../service/http";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -84,6 +84,7 @@ export default function SignIn() {
   const history = useHistory();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const { setIsLoggedIn } = useContext(AuthenticationContext);
 
   const submitCredential = (user) => {
     setLoading(true);
@@ -91,11 +92,12 @@ export default function SignIn() {
       .post("/api/auth/signin", user)
       .then((res) => {
         console.log("logged in");
-        authManger.setToken(res.headers.authorization);
+        setToken(res.headers.authorization);
+        setIsLoggedIn(true);
         history.push("/");
       })
       .catch((error) => {
-        if (error.response.status === 401) {
+        if (error.response && error.response.status === 401) {
           setErrorMsg("Invalid username/password");
         } else {
           console.log("Error signin : " + error);
@@ -119,6 +121,7 @@ export default function SignIn() {
         initialValues={{
           password: "",
           username: "",
+          remember: false,
         }}
         validationSchema={validate}
         onSubmit={(values, { setSubmitting }) => {
@@ -166,11 +169,18 @@ export default function SignIn() {
               helperText={touched.password && errors.password}
               margin="normal"
               fullWidth
-              autoFocus
               required
             />
             <FormControlLabel
-              control={<Checkbox name="remember" color="primary" />}
+              control={
+                <Checkbox
+                  name="remember"
+                  color="primary"
+                  checked={values.remember}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                />
+              }
               className={classes.checkbox}
               label="Remember me"
             />
@@ -197,7 +207,7 @@ export default function SignIn() {
                   className={classes.link}
                   component={RouterLink}
                 >
-                  Don't have an account? Register
+                  Create account
                 </Link>
               </Grid>
             </Grid>
