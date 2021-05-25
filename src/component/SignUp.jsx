@@ -6,11 +6,12 @@ import {
   TextField,
   Button,
   CircularProgress,
-  Modal,
   Dialog,
+  DialogActions,
+  Backdrop,
 } from "@material-ui/core";
 import { LockOutlined } from "@material-ui/icons";
-import { Alert, AlertTitle } from "@material-ui/lab";
+import { Alert } from "@material-ui/lab";
 import { Formik } from "formik";
 import { useContext, useState } from "react";
 import { useHistory } from "react-router";
@@ -65,17 +66,21 @@ const validate = yup.object({
       if (!value) {
         return false;
       }
-      let res = await httpClient.get("/api/auth/isexists", {
-        params: {
-          username: value,
-        },
-      });
+      let res = await checkUsername(value);
       if (res.data) {
         return false;
       }
       return true;
     }),
 });
+
+const checkUsername = async (value) => {
+  return httpClient.get("/api/auth/isexists", {
+    params: {
+      username: value,
+    },
+  });
+}
 
 export default function SignUp() {
   const classes = useStyles();
@@ -253,17 +258,30 @@ export default function SignUp() {
           </form>
         )}
       </Formik>
-      <Modal
+      {/* <Modal
         BackdropProps={{ style: { backgroundColor: "transparent" } }}
         open={loading}
       >
         <div></div>
-      </Modal>
-      <Dialog open={showSuccess} onClose={gotoNext}>
-        <Alert severity="success">
-          <AlertTitle>Success</AlertTitle>
+      </Modal> */}
+      <Backdrop open={loading} style={{ backgroundColor: "transparent",zIndex:"100"}}>
+      <CircularProgress size={70}/>
+
+      </Backdrop>
+      <Dialog open={showSuccess}>
+        <Alert severity="success" variant="outlined">
           Registered — <strong>successfully!</strong>
         </Alert>
+        <DialogActions>
+          <Button
+            size="small"
+            variant="text"
+            color="primary"
+            onClick={gotoNext}
+          >
+            OK
+          </Button>
+        </DialogActions>
       </Dialog>
     </div>
   );

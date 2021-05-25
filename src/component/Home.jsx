@@ -5,68 +5,51 @@ import {
   TableCell,
   TableRow,
 } from "@material-ui/core";
-import { CircularProgress, makeStyles } from "@material-ui/core";
-import { Alert } from "@material-ui/lab";
-import { useState, useEffect } from "react";
+import { Suspense } from "react";
 import { getUserId } from "../service/auth";
 import { httpClient } from "../service/http";
-
-const useStyles = makeStyles((theme) => ({
-  error: {
-    margin: "50px",
-  },
-  paper: {
-    // margin: theme.spacing(2),
-  },
-}));
+import { CreateSuspenseResource } from "../service/util";
+import DefaultError from "./DefaultError";
+import ErrorBoundary from "./ErrorBoundary";
+import FullscreenSpinner from "./FullscreenSpinner";
 
 export default function Home() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const classes = useStyles();
+  const fetchUser = (userId) => {
+    return {
+      user: CreateSuspenseResource(
+        httpClient.get("/api/users/" + userId),
+        (r) => r.data
+      ),
+    };
+  };
 
-  useEffect(() => {
-    let userId = getUserId();
-    httpClient
-      .get("/api/users/" + userId)
-      .then((res) => {
-        setUser(res.data);
-        console.log(JSON.stringify(res.data));
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.log(error);
-        setError(true);
-      });
-  }, []);
+  const resource = fetchUser(getUserId());
+
+  const UserDetails = () => {
+    const user = resource.user.read();
+    return (
+      <Paper>
+        <Table>
+          <TableBody>
+            <TableRow>
+              <TableCell align="right">Email :</TableCell>
+              <TableCell>{user.email}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell align="right">Dob :</TableCell>
+              <TableCell>{user.dob}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </Paper>
+    );
+  };
 
   return (
-    <>
-      {loading ? (
-        <CircularProgress />
-      ) : error ? (
-        <div className={classes.error}>
-          <Alert variant="outlined" severity="error">
-            Something went wrong. please try after soemtime.
-          </Alert>
-        </div>
-      ) : (
-        <Paper className={classes.paper}>
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell align="right">Email :</TableCell>
-                <TableCell>{user.email}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell align="right">Dob :</TableCell>
-                <TableCell>{user.dob}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </Paper>
-      )}
-    </>
+    <ErrorBoundary fallback={DefaultError()}>
+      <Suspense fallback={FullscreenSpinner()}>
+        <UserDetails />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

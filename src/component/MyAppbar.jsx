@@ -6,7 +6,9 @@ import {
   makeStyles,
   Toolbar,
   Typography,
+  Link as MuiLink
 } from "@material-ui/core";
+import { Link } from "react-router-dom";
 
 const useStyle = makeStyles((theme) => ({
   title: {
@@ -26,9 +28,11 @@ export default function MyAppBar() {
   return (
     <AppBar>
       <Toolbar>
-        <Typography variant="h6" className={classes.title}>
-          UserMg
-        </Typography>
+        <MuiLink color="inherit" underline="none" component={Link} to="/"  className={classes.title}>
+          <Typography variant="h6">
+            UserMg
+          </Typography>
+        </MuiLink>
         {isLoggedIn ? (
           <Button color="inherit" onClick={doLogout}>
             Logout
